@@ -1,0 +1,40 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: recipes
+      POSTGRES_USER: recipes
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Run python3 scripts/init_demo.py first}
+    volumes:
+      - recipe-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U recipes -d recipes"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+  app:
+    build: ./app
+    ports:
+      - "127.0.0.1:8093:8093"
+    environment:
+      PORT: "8093"
+      HOSTNAME: 0.0.0.0
+      DATABASE_URL: postgresql://recipes:${POSTGRES_PASSWORD}@db:5432/recipes
+      RECIPE_TRACKER_AUTH_SECRET: ${RECIPE_TRACKER_AUTH_SECRET:?Run the setup script}
+      RECIPE_TRACKER_USERS: ${RECIPE_TRACKER_USERS:?Run the setup script}
+      RECIPE_COOKIE_SECURE: "false"
+    depends_on:
+      db:
+        condition: service_healthy
+  scraper:
+    build: ./scraper
+    profiles: [scrape]
+    environment:
+      DATABASE_URL: postgresql://recipes:${POSTGRES_PASSWORD}@db:5432/recipes
+      RUN_ONCE: "1"
+      USDA_API_KEY: ${USDA_API_KEY:-}
+    depends_on:
+      db:
+        condition: service_healthy
+volumes:
+  recipe-data:

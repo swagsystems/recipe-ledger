@@ -1,0 +1,1 @@
+"""Recipe tracker scraper."""

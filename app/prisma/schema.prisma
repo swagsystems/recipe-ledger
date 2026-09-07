@@ -1,0 +1,149 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum SourceType {
+  blog
+  rss
+}
+
+enum RecipeStatus {
+  pending
+  approved
+  rejected
+}
+
+enum NutritionSource {
+  scraped
+  api_estimated
+}
+
+model Recipe {
+  id           String       @id @default(uuid()) @db.Uuid
+  title        String
+  description  String?
+  sourceUrl    String       @unique
+  sourceType   SourceType
+  ingredients  Json
+  instructions Json
+  servings     Int?
+  prepTime     Int?
+  cookTime     Int?
+  imageUrl     String?
+  status       RecipeStatus @default(pending)
+  reviewReason String?
+  confidence   Float        @default(1)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  sourceId     String?      @db.Uuid
+
+  source    ScrapeSource? @relation(fields: [sourceId], references: [id], onDelete: SetNull)
+  nutrition Nutrition?
+  tags      RecipeTag[]
+
+  @@index([status, createdAt])
+  @@index([sourceId])
+}
+
+model Nutrition {
+  id        String          @id @default(uuid()) @db.Uuid
+  recipeId  String          @unique @db.Uuid
+  calories  Float?
+  protein   Float?
+  carbs     Float?
+  fat       Float?
+  fiber     Float?
+  nutrients Json?
+  source    NutritionSource
+
+  recipe Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+}
+
+model Tag {
+  id   String @id @default(uuid()) @db.Uuid
+  name String @unique
+
+  recipes RecipeTag[]
+}
+
+model RecipeTag {
+  recipeId String @db.Uuid
+  tagId    String @db.Uuid
+
+  recipe Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  tag    Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([recipeId, tagId])
+}
+
+model ScrapeSource {
+  id             String     @id @default(uuid()) @db.Uuid
+  name           String
+  url            String     @unique
+  type           SourceType
+  scrapeInterval String     @default("0 2 * * *")
+  lastScrapedAt  DateTime?
+  enabled        Boolean    @default(true)
+  defaultTags    String[]   @default([])
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  recipes Recipe[]
+}
+
+model AppSetting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  accounts      Account[]
+  sessions      Session[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}

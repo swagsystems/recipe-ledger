@@ -1,0 +1,39 @@
+{
+  "name": "recipe-ledger",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -H 0.0.0.0 -p 8093",
+    "build": "prisma generate && next build",
+    "start": "next start -H 0.0.0.0 -p 8093",
+    "db:push": "prisma db push",
+    "db:seed": "node prisma/seed.mjs",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.22.0",
+    "next": "^15.5.25",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
+  },
+  "devDependencies": {
+    "@types/node": "^20.17.10",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.7",
+    "autoprefixer": "^10.4.20",
+    "eslint": "^8.57.1",
+    "eslint-config-next": "^15.5.25",
+    "postcss": "^8.4.49",
+    "prisma": "^5.22.0",
+    "tailwindcss": "^3.4.17",
+    "typescript": "^5.7.2"
+  },
+  "prisma": {
+    "seed": "node prisma/seed.mjs"
+  },
+  "overrides": {
+    "next": {
+      "postcss": "8.5.28"
+    }
+  }
+}
